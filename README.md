@@ -4,7 +4,7 @@
 
 ## Overview
 
-**Greyhound**, a scalable blob storage engine. Similar to Memcached and Redis, but much better. 
+**Greyhound**, a scalable NoSQL storage engine. Similar to Memcached and Redis, but much better. 
 
 ####Reasons why Greyhound is better:
 
