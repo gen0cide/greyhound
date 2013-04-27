@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see http://www.gnu.org/licenses/
 # -------------------------------------------------------------------
-USAGE="Usage: $(basename $0) -p PORT [-h for help]"
+USAGE="Usage: $(basename $0) -p PORT [-h for help] [-l to log]"
 # -------------------------------------------------------------------
 server ()
 {
@@ -23,29 +23,33 @@ server ()
   # readability will be broken up into several.
   rm -f ./._b > /dev/null 2>&1
   mkfifo ./._b
+  exec 3<&1 # fd 3 can be used inside the while loop to write to local stdout
   nc -lk $1 0<._b | \
-    while true; do 
-      read VALUE; 
-      ACTION=$(echo "$VALUE" | cut -d' ' -f1); 
-      KEY=$(echo "$VALUE" | cut -d' ' -f2 | sed 's/[^a-z_]//g;'); 
-      VALUE=$(echo "$VALUE" | sed "s/$ACTION $KEY //;"); 
-      case $ACTION in 
-        GET) cat db/$KEY ;; 
-        SET) echo "$VALUE" > db/$KEY ; echo "OK" ;; 
+    while read ACTION KEY VALUE; do 
+      KEY=${KEY//[^-0-9a-zA-Z_@.]/}
+      $log && echo "incoming: $ACTION $KEY" >&3
+      case "$ACTION" in 
+        GET) cat "db/$KEY";; #echo "$(< "db/$KEY")" ;; 
+        SET) echo "$VALUE" > "db/$KEY" ; echo "OK" ;; 
           *) echo "ERROR - UNKNOWN COMMAND" ;; 
       esac 
     done &>._b
 }
 # -------------------------------------------------------------------
-if ( ! getopts "p:h" opt); then
+if ( ! getopts "lp:h" opt); then
   echo "$USAGE"
   exit $E_OPTERROR;
 fi
 # -------------------------------------------------------------------
-while getopts "p:h" opt; do
+log=false
+port=
+while getopts "lp:h" opt; do
   case $opt in
+    l) log=true;;
     h) echo "$USAGE";;
-    p) server $OPTARG;;
+    p) port=$OPTARG;;
   esac
 done
+shift $((OPTIND - 1))
+server "$port"
 # -------------------------------------------------------------------
