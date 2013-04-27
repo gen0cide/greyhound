@@ -19,9 +19,22 @@ USAGE="Usage: $(basename $0) -p PORT [-h for help]"
 # -------------------------------------------------------------------
 server ()
 {
+  # Server can be written as one line, but for n00b 
+  # readability will be broken up into several.
   rm -f ./._b > /dev/null 2>&1
   mkfifo ./._b
-  nc -lk $1 0<._b | while true; do read VALUE; ACTION=$(echo "$VALUE" | cut -d' ' -f1); KEY=$(echo "$VALUE" | cut -d' ' -f2 | sed 's/[^a-z_]//g;'); VALUE=$(echo "$VALUE" | sed "s/$ACTION $KEY //;"); case $ACTION in GET) cat db/$KEY ;; SET) echo "$VALUE" > db/$KEY ; echo "OK" ;; *) echo "ERROR - UNKNOWN COMMAND" ;; esac done &>._b
+  nc -lk $1 0<._b | \
+    while true; do 
+      read VALUE; 
+      ACTION=$(echo "$VALUE" | cut -d' ' -f1); 
+      KEY=$(echo "$VALUE" | cut -d' ' -f2 | sed 's/[^a-z_]//g;'); 
+      VALUE=$(echo "$VALUE" | sed "s/$ACTION $KEY //;"); 
+      case $ACTION in 
+        GET) cat db/$KEY ;; 
+        SET) echo "$VALUE" > db/$KEY ; echo "OK" ;; 
+          *) echo "ERROR - UNKNOWN COMMAND" ;; 
+      esac 
+    done &>._b
 }
 # -------------------------------------------------------------------
 if ( ! getopts "p:h" opt); then
